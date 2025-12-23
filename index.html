@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wirtualny Ogródek 🌱</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
+</head>
+<body>
+
+    <header>
+        <h1>🌱 Wirtualny Ogródek</h1>
+        
+        <div class="creator-panel" style="margin: 20px auto; max-width: 800px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+            <h4 style="margin-top: 0;">🧪 Stwórz własną roślinę:</h4>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <input type="text" id="new-plant-name" placeholder="Nazwa + Emoji (np. Smok 🐉)" style="padding: 8px; flex: 2; border-radius: 4px; border: none;">
+                <input type="number" id="new-plant-thirst" placeholder="Pragnienie (1-5)" min="1" max="5" style="padding: 8px; width: 80px; border-radius: 4px; border: none;">
+                <input type="number" id="new-plant-growth" placeholder="Szybkość (1-5)" min="1" max="5" style="padding: 8px; width: 80px; border-radius: 4px; border: none;">
+                <button id="btn-create-species" style="background: #9b59b6; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer;">Dodaj do kolekcji ✨</button>
+            </div>
+        </div>
+    </header>
+
+    <div id="app"></div>
+
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>
