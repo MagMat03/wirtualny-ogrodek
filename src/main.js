@@ -1,92 +1,74 @@
 import { createStore } from './utils/store.js';
 import { gardenReducer, initialState } from './core/reducer.js';
-import { renderGarden } from './ui/render.js';
+import { AppView } from './ui/view.js';
+import { saveState, loadState } from './effects/storage.js';
+import { playSound, checkSoundEffect } from './effects/sound.js';
+import { startTicker } from './effects/ticker.js';
 
-const app = document.getElementById('app');
+const appContainer = document.getElementById('app');
 
-const playSound = (name) => {
-    const audio = new Audio(`sounds/${name}.mp3`);
-    audio.volume = 0.3;
-    audio.play().catch(e => console.log("Brak pliku audio lub blokada:", e));
-};
-
-const loadState = () => {
-    try {
-        const serializedState = localStorage.getItem('my_garden_state_v2');
-        if (serializedState === null) return initialState;
-        return JSON.parse(serializedState);
-    } catch (err) { return initialState; }
-};
-
-const store = createStore(gardenReducer, loadState());
-
-let prevBadgesLength = 0;
+const store = createStore(gardenReducer, loadState(initialState));
+let prevBadgesCount = store.getState().badges.length;
 
 store.subscribe(() => {
     const state = store.getState();
-    app.innerHTML = renderGarden(state);
-    
-    localStorage.setItem('my_garden_state_v2', JSON.stringify(state));
+    appContainer.innerHTML = AppView(state);
+});
 
-    if (state.badges.length > prevBadgesLength) {
+store.subscribe(() => {
+    const state = store.getState();
+    
+    saveState(state);
+
+    if (state.badges.length > prevBadgesCount) {
         playSound('win');
-        alert("🏆 Zdobyto nową odznakę! Sprawdź panel.");
-        prevBadgesLength = state.badges.length;
+        alert("🏆 Nowa odznaka!");
+        prevBadgesCount = state.badges.length;
     }
 });
 
-setInterval(() => {
-    store.dispatch({ type: 'TICK' });
-}, 3000);
-
-setInterval(() => {
-    store.dispatch({ type: 'CHANGE_WEATHER' });
-}, 15000);
+startTicker(store.dispatch);
 
 document.body.addEventListener('click', (e) => {
-    const target = e.target;
+    const { target } = e;
+    const { id, dataset, classList } = target;
 
-    if (target.classList.contains('btn-seed')) {
-        store.dispatch({ type: 'SELECT_SEED', payload: target.dataset.type });
+    const dispatch = (action) => {
+        store.dispatch(action);
+        checkSoundEffect(action.type);
+    };
+
+    if (classList.contains('btn-seed')) {
+        dispatch({ type: 'SELECT_SEED', payload: dataset.type });
     }
-
-    if (target.id === 'btn-plant-action') {
+    
+    if (id === 'btn-plant-action') {
         const state = store.getState();
         const config = state.seedTypes.find(t => t.type === state.selectedSeed);
-        if (config) {
-            playSound('dig');
-            store.dispatch({ type: 'PLANT_SEED', config });
-        }
+        if (config) dispatch({ type: 'PLANT_SEED', config });
     }
 
-    if (target.id === 'btn-create-species') {
-        const nameInput = document.getElementById('new-plant-name');
-        const thirstInput = document.getElementById('new-plant-thirst');
-        const growthInput = document.getElementById('new-plant-growth');
-        if (nameInput.value) {
-            store.dispatch({
-                type: 'ADD_NEW_SPECIES',
-                payload: {
-                    name: nameInput.value,
-                    thirst: thirstInput.value || 2,
-                    growth: growthInput.value || 3
-                }
+    if (classList.contains('btn-water')) {
+        dispatch({ type: 'WATER_PLANT', id: parseInt(dataset.id) });
+    }
+
+    if (classList.contains('btn-remove')) {
+        dispatch({ type: 'REMOVE_PLANT', id: parseInt(dataset.id) });
+    }
+
+    if (id === 'btn-create-species') {
+        const name = document.getElementById('new-plant-name').value;
+        const thirst = document.getElementById('new-plant-thirst').value;
+        const growth = document.getElementById('new-plant-growth').value;
+        
+        if (name) {
+            dispatch({ 
+                type: 'ADD_NEW_SPECIES', 
+                payload: { name, thirst: thirst || 2, growth: growth || 3 } 
             });
-            nameInput.value = '';
+            document.getElementById('new-plant-name').value = '';
         }
-    }
-
-    if (target.classList.contains('btn-water')) {
-        const id = parseInt(target.dataset.id);
-        playSound('water');
-        store.dispatch({ type: 'WATER_PLANT', id });
-    }
-
-    if (target.classList.contains('btn-remove')) {
-        const id = parseInt(target.dataset.id);
-        store.dispatch({ type: 'REMOVE_PLANT', id });
     }
 });
 
-prevBadgesLength = loadState().badges?.length || 0;
 store.dispatch({ type: 'INIT' });
